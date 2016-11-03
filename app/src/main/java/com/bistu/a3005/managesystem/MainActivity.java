@@ -6,6 +6,7 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
@@ -26,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     List<Map<String,String>> stationsConditionList = new ArrayList<Map<String,String>>();
     SimpleAdapter simpleAdapter;
     UDPBroadCast udpBroadCast= new UDPBroadCast();
+    TCPCommunication tcpCommunication = new TCPCommunication();
     private String[] stations = new String[24];
     final static int RC_MSG_WHAT = 0x0001;
     final static String RC_MSG_KEY = "udpBroadCast";
@@ -34,11 +36,12 @@ public class MainActivity extends AppCompatActivity {
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             if(msg.what == RC_MSG_WHAT){
+
                 textView.append("client report:\r\n");
                 byte b[] = msg.getData().getByteArray(RC_MSG_KEY);
                 String str = new String(b);
                 //System.out.println(str);
-                Pattern pattern = Pattern.compile("^(\\d{1,2}),\\w+,([\\s\\w]+)");
+                Pattern pattern = Pattern.compile("^(\\d{1,2}),\\d{1,2},([\\s\\w]+)");
                 Matcher m = pattern.matcher(str);
                 if(m.find()) {
                     //更新view
@@ -46,14 +49,18 @@ public class MainActivity extends AppCompatActivity {
                     int position = Integer.parseInt(m.group(1)) - 1;
                     Map<String, Object> item = listItems.get(position);
                     item.remove("image");
-                    if (m.group(2).equals("normal")|| m.group(2).equals("client received"))//客户端汇报状态，normal：在线并正常工作，off line:离线，其他：在线但工作异常
+                    if (m.group(2).equals("normal"))//客户端汇报状态，normal：在线并正常工作，off line:离线，其他：在线但工作异常
                         item.put("image", R.drawable.gear_64px_g);
-                    else if(m.group(2).equals("client off line")|| m.group(2).equals("client confirm"))//host 或client要离线
+                    else if(m.group(2).equals("client off line"))//host 或client要离线
                         item.put("image", R.drawable.gear_64px_gr);
                     else
                         item.put("image",R.drawable.gear_64px_r);
                     simpleAdapter.notifyDataSetChanged();
                 }
+            }
+            int offset=(textView.getLineCount()+1)*textView.getLineHeight();
+            if(offset>textView.getHeight()){
+                textView.scrollTo(0,offset-textView.getHeight());
             }
         }
     };
@@ -64,7 +71,8 @@ public class MainActivity extends AppCompatActivity {
 
         initView();
         initUI();
-        initUDPBroadCast();
+        initUDPBroadCast();//使client获取server地址
+        initTCPCommunication();//开始监听client的TCP连接
     }
     private void initView(){
         grid = (GridView) findViewById(R.id.gridView);
@@ -72,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
         textView.append("initView\r\n");
     }
     private void initUI(){
+        textView.setMovementMethod(ScrollingMovementMethod.getInstance());
         textView.append("initUI start\r\n");
         for(int i=0;i<stations.length;i++){
             stations[i]=(i+1)+"号工作站";
@@ -120,10 +129,6 @@ public class MainActivity extends AppCompatActivity {
             textView.append("   has got local IP Address\r\n");
             udpBroadCast.setLocalIpAddress(localIpAddress);
             udpBroadCast.setPort(8005);
-            udpBroadCast.msgProcess.setUiHandler(handler);
-            udpBroadCast.msgProcess.setMsgWhat(RC_MSG_WHAT);
-            udpBroadCast.msgProcess.setMsgKey(RC_MSG_KEY);
-            udpBroadCast.msgProcess.setStationsConditionList(stationsConditionList);
             try {
                 udpBroadCast.receiver.start();
             } catch (Exception e) {
@@ -138,6 +143,14 @@ public class MainActivity extends AppCompatActivity {
             this.showDialog("网络错误！","请确认网络连接正确，并重启应用！");
         }
         textView.append("initUDPBroadCast finish\r\n");
+    }
+    private void initTCPCommunication(){
+        tcpCommunication.setPort(8006);
+        tcpCommunication.setUiHandler(handler);
+        tcpCommunication.setMsgWhat(RC_MSG_WHAT);
+        tcpCommunication.setMsgKey(RC_MSG_KEY);
+        tcpCommunication.setStationsConditionList(stationsConditionList);
+        tcpCommunication.start();
     }
     private void showDialog(String title, String msg){
         android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(this);

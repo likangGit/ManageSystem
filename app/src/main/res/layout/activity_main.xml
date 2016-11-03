@@ -28,10 +28,13 @@
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:id="@+id/textView"
             android:textColor="#ffffff"
-            android:layout_weight="0.25"
+            android:scrollbars="vertical"
+            android:fadeScrollbars="false"
+            android:singleLine="false"
             android:background="#393b44"
             android:layout_margin="0dp"
-            android:padding="10dp" />
+            android:padding="10dp"
+            android:layout_weight="0.25" />
 
         <GridView
             android:id="@+id/gridView"

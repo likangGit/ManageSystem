@@ -32,16 +32,17 @@ public   class UDPBroadCast{
     public Receiver receiver;
     public Sender sender;
     public HostOnLine hostOnLine;
-    public MsgProcess msgProcess;
+    //public MsgProcess msgProcess;
     private String localIpAddress;
     private DatagramSocket ds=null;
     private int port;
+
     public UDPBroadCast(){
         receiver = new Receiver();
         sender = new Sender();
         hostOnLine = new HostOnLine();
-        msgProcess = new MsgProcess();
-        new Thread(msgProcess).start();
+        //msgProcess = new MsgProcess();
+        //new Thread(msgProcess).start();
     }
     public void setPort(int port) {
         this.port = port;
@@ -54,12 +55,9 @@ public   class UDPBroadCast{
     public void setLocalIpAddress(String localIpAddress) {
         this.localIpAddress = localIpAddress;
     }
+
     public class MsgProcess implements Runnable{
         public Handler handler;
-        private android.os.Handler uiHandler=null;
-        private int MSG_WHAT;
-        private String MSG_KEY;
-        List<Map<String,String>> stationsConditionList;
         @Override
         public void run() {
             Looper.prepare();
@@ -70,67 +68,19 @@ public   class UDPBroadCast{
                     if(msg.what==0x0002){
                         byte data[] = msg.getData().getByteArray("rawMsg");
                         String str = new String(data);
-                        Pattern pattern = Pattern.compile("^(\\d{1,2}),(\\w+),([\\w\\s]+),([\\w\\.]+)");
+                        System.out.println(str);
+                        Pattern pattern = Pattern.compile("^\\d{1,2},\\d{1,2},([\\w\\s]+),([\\w\\.]+)");
                         Matcher m = pattern.matcher(str);
                         if(m.find()){
-                            Bundle bundle = new Bundle();
-                            bundle.putByteArray(MSG_KEY,data);
-                            Message uiMsg = new Message();
-                            uiMsg.what = MSG_WHAT;
-                            uiMsg.setData(bundle);
-                            uiHandler.sendMessage(uiMsg);
-                            if(m.group(3).equals("client received")){//收到client对host上线通知的应答
-                                //更新stationCondition
-                                int position = Integer.parseInt(m.group(1)) - 1;
-                                Map<String,String> stationCondition = stationsConditionList.get(position);
-                                stationCondition.clear();
-                                stationCondition.put("status","normal");
-                                stationCondition.put("cutNumber",m.group(2));
-                                stationCondition.put("IPAddress",m.group(4));
-                            }else if(m.group(3).equals("client off line")){//收到client下线通知
-                                sender.setBroadCastAddress(m.group(4));
-                                sender.send("host confirm");
-                                //更新stationCondition
-                                int position = Integer.parseInt(m.group(1)) - 1;
-                                Map<String,String> stationCondition = stationsConditionList.get(position);
-                                stationCondition.clear();
-                                stationCondition.put("status",m.group(3));
-                                stationCondition.put("cutNumber","0");
-                                stationCondition.put("IPAddress","none");
-                            }else if(m.group(3).equals("client confirm")){//收到client对host下线通知的应答
-                                //更新stationCondition
-                                int position = Integer.parseInt(m.group(1)) - 1;
-                                Map<String,String> stationCondition = stationsConditionList.get(position);
-                                stationCondition.remove("IPAddress");
-                                stationCondition.put("IPAddress","none");
-                            }else {//client状态通知
-                                sender.setBroadCastAddress(m.group(4));
-                                sender.send("host received");
-                                //更新stationCondition
-                                int position = Integer.parseInt(m.group(1)) - 1;
-                                Map<String,String> stationCondition = stationsConditionList.get(position);
-                                stationCondition.clear();
-                                stationCondition.put("status",m.group(3));
-                                stationCondition.put("cutNumber",m.group(2));
-                                stationCondition.put("IPAddress",m.group(4));
+                            if(m.group(1).equals("client on line")) {//收到client对host上线通知的应答
+                                sender.setBroadCastAddress(m.group(2));
+                                sender.send("ans for client on line");
                             }
                         }
                     }
                 }
             };
             Looper.loop();
-        }
-        public void setUiHandler(android.os.Handler handler) {
-            this.uiHandler = handler;
-        }
-        public void setMsgWhat(int msgWhat) {
-            this.MSG_WHAT = msgWhat;
-        }
-        public void setMsgKey(String msg_key){
-            this.MSG_KEY = msg_key;
-        }
-        public void setStationsConditionList(List<Map<String, String>> stationsConditionList) {
-            this.stationsConditionList = stationsConditionList;
         }
     }
     public class HostOnLine implements Runnable {
@@ -158,15 +108,12 @@ public   class UDPBroadCast{
                     if(dp.getAddress().getHostAddress().equals(localIpAddress)) {//don't process msg broadcast by self
                        continue;
                     }
-                    Bundle bundle = new Bundle();
-                    String temp = new String(dp.getData(),0,dp.getLength());
-                    temp = temp + ","+dp.getAddress().getHostAddress();
-                    //System.out.println(temp);
-                    bundle.putByteArray("rawMsg",temp.getBytes());
-                    Message msg = new Message();
-                    msg.what = 0x0002;
-                    msg.setData(bundle);
-                    msgProcess.handler.sendMessage(msg);
+                    String str = new String(dp.getData(),0,dp.getLength());
+                    System.out.println(str);
+                    if(str.equals("client on line")){
+                        sender.setBroadCastAddress(dp.getAddress().getHostAddress());
+                        sender.send("ans for client on line");
+                    }
                     //System.out.println("client ip:" + new String(temp));
                 } catch (Exception e) {
                     e.printStackTrace();
