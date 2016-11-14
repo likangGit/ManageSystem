@@ -137,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
             udpBroadCast.sender.setBroadCastAddress("255.255.255.255");
             udpBroadCast.sender.start();
             textView.append("   start broadcast host on line\r\n");
-            new Thread(udpBroadCast.hostOnLine).start();
+            new Thread(udpBroadCast.new BroadCast("host on line")).start();
         }else{
             textView.append("   IP address error\r\n");
             this.showDialog("网络错误！","请确认网络连接正确，并重启应用！");
@@ -176,5 +176,40 @@ public class MainActivity extends AppCompatActivity {
                 ((i >> 8 ) & 0xFF) + "." +
                 ((i >> 16 ) & 0xFF) + "." +
                 ( i >> 24 & 0xFF) ;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(udpBroadCast.sender.isAlive()){
+            new Thread(udpBroadCast.new BroadCast("host off line")).start();
+            //System.out.println("host off line onPause");
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //System.out.println("onResume");
+        for(int i=0;i<stations.length;i++){
+            Map<String, Object> listItem = listItems.get(i);
+            if(listItem.get("image").equals(R.drawable.gear_64px_gr)) continue;
+            listItem.remove("image");
+            listItem.put("image",R.drawable.gear_64px_gr);
+
+            Map<String,String> stationCondition = stationsConditionList.get(i);
+            stationCondition.clear();
+            stationCondition.put("status","off line");
+            stationCondition.put("cutNumber","0");
+            stationCondition.put("IPAddress","none");
+        }
+        simpleAdapter.notifyDataSetChanged();
+        String localIpAddress = getLocalIpAddress();
+        if(localIpAddress!=null){
+            new Thread(udpBroadCast.new BroadCast("host on line")).start();
+        }else{
+            textView.append("   IP address error\r\n");
+            this.showDialog("网络错误！","请确认网络连接正确，并重启应用！");
+        }
     }
 }

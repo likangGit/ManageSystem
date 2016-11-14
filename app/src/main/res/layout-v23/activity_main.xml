@@ -27,25 +27,22 @@
             android:orientation="vertical"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:weightSum="1"
-            android:layout_weight="0.25">
+            android:layout_weight="0.25"
+            android:weightSum="1">
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:text="@string/titleViewText"
                 android:id="@+id/titleView"
-                android:layout_weight="0.098"
+                android:layout_weight="0.10"
                 android:background="#393b44"
+                android:allowUndo="false"
+                android:textAlignment="center"
                 android:textColor="#ffffff"
-                android:textSize="30sp"
-                android:gravity="center"
-                android:fontFamily="sans-serif-thin" />
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.002" />
+                android:textSize="40sp"
+                android:textIsSelectable="false"
+                android:gravity="center" />
 
             <TextView
                 android:layout_width="match_parent"

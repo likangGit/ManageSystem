@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">ManageSystem</string>
+    <string name="titleViewText">信息</string>
 </resources>

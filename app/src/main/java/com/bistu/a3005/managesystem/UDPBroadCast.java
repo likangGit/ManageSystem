@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 public   class UDPBroadCast{
     public Receiver receiver;
     public Sender sender;
-    public HostOnLine hostOnLine;
     //public MsgProcess msgProcess;
     private String localIpAddress;
     private DatagramSocket ds=null;
@@ -40,7 +39,6 @@ public   class UDPBroadCast{
     public UDPBroadCast(){
         receiver = new Receiver();
         sender = new Sender();
-        hostOnLine = new HostOnLine();
         //msgProcess = new MsgProcess();
         //new Thread(msgProcess).start();
     }
@@ -83,14 +81,18 @@ public   class UDPBroadCast{
             Looper.loop();
         }
     }
-    public class HostOnLine implements Runnable {
+    public class BroadCast implements Runnable {
+        private String msg;
+        public BroadCast(String msg){
+            this.msg = msg;
+        }
         @Override
         public void run() {
             // TODO Auto-generated method stub
             for(int i=4;i>0;i--) {
                 try {
                     Thread.sleep(1000);// 线程暂停1秒，单位毫秒
-                    sender.send("host on line");
+                    sender.send(msg);
                 } catch (InterruptedException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -157,6 +159,7 @@ public   class UDPBroadCast{
             }
         }
     }
+
 
 
 }
